@@ -1,0 +1,16 @@
+{
+  "name": "resenha-cafe-search-worker",
+  "version": "4.0.0",
+  "description": "Search Worker V4 — busca acadêmica multi-provider",
+  "type": "module",
+  "main": "src/index.js",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

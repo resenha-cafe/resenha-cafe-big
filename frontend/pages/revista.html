@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revista | Resenha & Café</title>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="/styles/reset.css">
+  <link rel="stylesheet" href="/styles/variables.css">
+  <link rel="stylesheet" href="/styles/layout.css">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/components/header.css">
+  <link rel="stylesheet" href="/styles/components/footer.css">
+  <link rel="stylesheet" href="/styles/components/search-box.css">
+  <link rel="stylesheet" href="/styles/components/filters.css">
+  <link rel="stylesheet" href="/styles/components/article-card.css">
+  <link rel="stylesheet" href="/styles/components/loading.css">
+  <link rel="stylesheet" href="/styles/components/empty-state.css">
+  <link rel="stylesheet" href="/styles/components/error-state.css">
+  <link rel="stylesheet" href="/styles/pages/revista.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div id="header-root"></div>
+
+    <!-- Conteúdo principal -->
+    <main class="revista">
+      <h1>Revista Científica</h1>
+
+      <!-- Formulário de busca -->
+      <div id="search-form-root"></div>
+
+      <!-- Indicador de carregamento (oculto por padrão) -->
+      <div id="loading-root" hidden></div>
+
+      <!-- Mensagens de erro (oculto por padrão) -->
+      <div id="error-root" hidden></div>
+
+      <!-- Lista de resultados -->
+      <div id="results-root"></div>
+
+      <!-- Estado vazio (oculto por padrão) -->
+      <div id="empty-root" hidden></div>
+    </main>
+
+    <!-- Footer -->
+    <div id="footer-root"></div>
+  </div>
+
+  <!-- Script principal da página -->
+  <script type="module" src="/src/pages/revista.page.js"></script>
+</body>
+</html>
