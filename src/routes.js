@@ -37,7 +37,11 @@ export const routes = [
 
       return Response.ok({
         query,
-        results: result.results,
+        results: result.results.map(article =>
+          typeof article?.toPlainObject === "function"
+            ? article.toPlainObject()
+            : article
+        ),
         total: result.total || result.results?.length || 0,
         metrics: result.metrics,
         duration: result.duration,
@@ -54,15 +58,23 @@ export const routes = [
 
       const validatedDoi = RequestValidator.validateDoi(doi);
       const useCase = context.get("getArticle");
-      const article = await useCase.execute(validatedDoi, { useCache: false });
+      const result = await useCase.execute(validatedDoi, { useCache: false });
+      const article = result?.article ?? null;
 
       if (!article) {
-        return Response.notFound(`Article with DOI "${doi}" not found`);
+        return Response.notFound(`Article with DOI "" not found`);
       }
 
-      return Response.ok({ article });
+
+      return Response.ok({
+        article:
+          typeof article?.toPlainObject === "function"
+            ? article.toPlainObject()
+            : article,
+      });
     },
   },
+        
 
   {
     method: "GET",
