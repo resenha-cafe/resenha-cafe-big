@@ -16,6 +16,7 @@ export class OpenAlexAdapter extends BaseAdapter {
     });
 
     this.email = options.email || null;
+    this.apiKey = options.apiKey || null;
     this.defaultPerPage = options.defaultPerPage ?? 25;
     this.maxPerPage = 200;
   }
@@ -31,6 +32,10 @@ export class OpenAlexAdapter extends BaseAdapter {
 
     if (this.email) {
       requestParams.mailto = this.email;
+    }
+
+    if (this.apiKey) {
+      requestParams.api_key = this.apiKey;
     }
 
     const filter = this.#buildFilter(params);
@@ -59,7 +64,10 @@ export class OpenAlexAdapter extends BaseAdapter {
     const encodedDoi = encodeURIComponent(`doi:${doi}`);
 
     try {
-      const params = this.email ? { mailto: this.email } : {};
+      const params = {};
+      if (this.email) params.mailto = this.email;
+      if (this.apiKey) params.api_key = this.apiKey;
+
       const data = await this._get(`/works/${encodedDoi}`, params);
       return data || null;
     } catch (error) {

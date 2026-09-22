@@ -23,6 +23,7 @@ export function createProviders({ cache, eventPublisher, logger, env = {} }) {
       eventPublisher,
       logger,
       email: env.OPENALEX_EMAIL || env.CROSSREF_EMAIL || null,
+      apikey: env.OPENALEX_API_KEY || null, 
     }),
     new CrossRefProvider({
       cache,

@@ -5,6 +5,7 @@ export class OpenAlexProvider extends BaseProvider {
   constructor(options = {}) {
     const adapter = options.adapter || new OpenAlexAdapter({
       email: options.email,
+      apiKey: options.apiKey,
       timeout: options.timeout,
       logger: options.logger,
       rateLimiter: options.rateLimiter,
