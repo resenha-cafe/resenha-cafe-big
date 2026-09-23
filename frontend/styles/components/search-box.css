@@ -1,0 +1,33 @@
+/* ============================================================
+   SearchBox
+   ============================================================ */
+
+.search-box__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+  color: var(--color-text);
+}
+
+.search-box__input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-base);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-box__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(111, 78, 55, 0.15);
+  outline: none;
+}
+
+.search-box__error {
+  margin-top: var(--space-xs);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}

@@ -1,0 +1,32 @@
+/* ============================================================
+   Footer
+   ============================================================ */
+
+.footer {
+  padding: var(--space-lg);
+  background-color: var(--color-primary-dark);
+  color: var(--color-text-inverse);
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
+
+.footer__copyright {
+  margin: 0 0 var(--space-sm);
+}
+
+.footer__nav-list {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.footer__nav-link {
+  color: var(--color-text-inverse);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer__nav-link:hover {
+  color: var(--color-accent);
+  text-decoration: none;
+}

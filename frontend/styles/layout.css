@@ -1,0 +1,49 @@
+/* ============================================================
+   Layout geral
+   ============================================================ */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--space-md);
+}
+
+.revista,
+.article-page {
+  width: 100%;
+}
+
+.revista h1,
+.article-page h1 {
+  font-size: var(--font-size-3xl);
+  margin-bottom: var(--space-lg);
+}
+
+.revista h2,
+.article-page h2 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-md);
+}
+
+section {
+  margin-bottom: var(--space-lg);
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: var(--space-md) var(--space-sm);
+  }
+
+  .revista h1,
+  .article-page h1 {
+    font-size: var(--font-size-2xl);
+  }
+}

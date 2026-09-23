@@ -1,0 +1,123 @@
+/* ============================================================
+   ArticleCard
+   ============================================================ */
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.article-card {
+  background-color: var(--color-surface);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.article-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.article-card__title {
+  font-size: var(--font-size-lg);
+  margin: 0 0 var(--space-sm);
+  color: var(--color-text);
+}
+
+.article-card__link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.article-card__link:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+.article-card__authors {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-sm);
+}
+
+.article-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.article-card__journal {
+  font-weight: 600;
+}
+
+.article-card__abstract {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: var(--space-sm) 0;
+}
+
+.article-card__footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.article-card__badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.article-card__badge--open-access {
+  background-color: rgba(46, 125, 50, 0.1);
+  color: var(--color-success);
+}
+
+.article-card__citations {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.article-card__save-container {
+  margin-left: auto;
+}
+
+.save-article-button {
+  padding: var(--space-xs) var(--space-md);
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.save-article-button:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.save-article-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
+  border-color: var(--color-success);
+}

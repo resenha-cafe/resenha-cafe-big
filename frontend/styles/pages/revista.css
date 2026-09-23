@@ -1,0 +1,19 @@
+/* ============================================================
+   Revista (página)
+   ============================================================ */
+
+.revista {
+  display: flex;
+  flex-direction: column;
+}
+
+.revista h1 {
+  font-family: var(--font-family-serif);
+  color: var(--color-primary-dark);
+}
+
+#loading-root,
+#error-root,
+#empty-root {
+  margin-top: var(--space-md);
+}
