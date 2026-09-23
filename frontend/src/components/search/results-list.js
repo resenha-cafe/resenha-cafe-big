@@ -6,33 +6,24 @@ import { SearchResult } from '../../domain/search-result.js';
 
 /**
  * Componente visual para lista de resultados de busca.
- * Renderiza uma coleção de artigos usando `ArticleCard`, dentro de uma lista semântica (`<ul>`/`<li>`).
- * A atualização (`update`) mantém o componente montado, mas recria internamente os cards.
- *
- * @example
- * const list = new ResultsList({
- *   root: document.getElementById('results'),
- *   items: searchResult,
- *   onSave: (article) => biblioteca.salvar(article)
- * });
- * list.mount();
- * list.update(newSearchResult);
+ * Renderiza uma coleção de artigos usando `ArticleCard`.
+ * Aceita `Article[]` ou um `SearchResult`.
  */
 export class ResultsList {
   /**
    * @param {Object} options
    * @param {Node} options.root - Nó DOM onde a lista será montada.
-   * @param {Article[]|SearchResult} [options.items = []] - Lista de artigos ou SearchResult.
-   * @param {Function} [options.onSave] - Callback para ação de salvar artigo.
+   * @param {Article[]|SearchResult} [options.items = []]
+   * @param {LibraryService} [options.libraryService] - Serviço de biblioteca repassado aos cards.
    */
-  constructor({ root, items = [], onSave = null }) {
+  constructor({ root, items = [], libraryService = null }) {
     if (!root || typeof root.appendChild !== 'function') {
       throw new Error('[ResultsList] root deve ser um nó DOM válido.');
     }
 
     this.root = root;
     this.articles = this._extractAndValidate(items);
-    this.onSave = onSave;
+    this.libraryService = libraryService;
 
     this.container = null;
     this.cards = [];
@@ -51,7 +42,7 @@ export class ResultsList {
 
   destroy() {
     if (!this.isMounted) return;
-    this.cards.forEach(card => card.destroy());
+    this.cards.forEach((card) => card.destroy());
     this.cards = [];
     if (this.container) {
       this.container.remove();
@@ -63,22 +54,23 @@ export class ResultsList {
   update(items) {
     this.articles = this._extractAndValidate(items);
     if (!this.isMounted) return;
-    this.cards.forEach(card => card.destroy());
+    this.cards.forEach((card) => card.destroy());
     this.cards = [];
     this._renderCards();
   }
 
   _extractAndValidate(items) {
+    if (!items) return [];
     let articles;
     if (Array.isArray(items)) {
       articles = items;
     } else if (items instanceof SearchResult) {
-      articles = items.articles;
+      articles = items.articles || [];
     } else {
       articles = [];
     }
 
-    if (!articles.every(article => article instanceof Article)) {
+    if (!articles.every((article) => article instanceof Article)) {
       throw new TypeError('[ResultsList] Todos os itens devem ser instâncias de Article.');
     }
 
@@ -90,13 +82,13 @@ export class ResultsList {
     this.container.innerHTML = '';
     if (this.articles.length === 0) return;
 
-    this.articles.forEach(article => {
+    this.articles.forEach((article) => {
       const listItem = document.createElement('li');
       listItem.className = 'results-list__item';
       const card = new ArticleCard({
         root: listItem,
         article,
-        onSave: this.onSave,
+        libraryService: this.libraryService,
       });
       card.mount();
       this.cards.push(card);

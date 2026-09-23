@@ -2,38 +2,25 @@
 
 import { Article } from '../../domain/article.js';
 import { formatPublicationDate } from '../../utils/format-date.js';
+import { SaveArticleButton } from '../library/save-article-button.js';
 
 /**
  * Componente visual de card de artigo.
- * Exibe informações essenciais de um artigo (título, autores, periódico,
- * data, resumo curto e indicadores) em um cartão.
- *
- * O card não chama API nem conhece SearchService. A navegação para a página
- * do artigo é feita via link normal (`<a href="artigo.html?doi=...">`),
- * se o artigo tiver DOI. Caso contrário, o título é renderizado como texto puro.
- *
- * @example
- * const card = new ArticleCard({
- *   root: document.getElementById('article-list'),
- *   article: articleInstance,
- *   onSave: (article) => console.log('Salvar artigo', article.doi),
- *   abstractMaxLength: 180
- * });
- * card.mount();
+ * Exibe informações essenciais do artigo e, se um `libraryService` for
+ * fornecido, inclui o botão de salvar.
  */
 export class ArticleCard {
   /**
    * @param {Object} options
    * @param {Node} options.root - Nó DOM onde o card será montado.
-   * @param {Article} options.article - Instância de Article a ser exibida.
-   * @param {Function} [options.onSave] - Callback opcional para ação de salvar.
-   *        Recebe a instância de Article.
+   * @param {Article} options.article - Instância de Article.
+   * @param {LibraryService} [options.libraryService] - Serviço de biblioteca.
    * @param {number} [options.abstractMaxLength = 200] - Comprimento máximo do resumo.
    */
   constructor({
     root,
     article,
-    onSave = null,
+    libraryService = null,
     abstractMaxLength = 200,
   }) {
     if (!root || typeof root.appendChild !== 'function') {
@@ -45,24 +32,17 @@ export class ArticleCard {
 
     this.root = root;
     this.article = article;
-    this.onSave = onSave;
+    this.libraryService = libraryService;
     this.abstractMaxLength = Number(abstractMaxLength) || 200;
 
     this.container = null;
-    this._saveButton = null;
-    this._boundSaveClick = null;
+    this.saveButton = null;
     this.isMounted = false;
-    this.isSaving = false;
-    this.isSaved = false;
   }
 
-  /**
-   * Monta o card no DOM.
-   */
   mount() {
     if (this.isMounted) return;
 
-    // Cria o elemento principal
     this.container = document.createElement('article');
     this.container.className = 'article-card';
 
@@ -126,7 +106,6 @@ export class ArticleCard {
     const footer = document.createElement('div');
     footer.className = 'article-card__footer';
 
-    // Indicador de acesso aberto
     if (this.article.openAccess) {
       const openAccessBadge = document.createElement('span');
       openAccessBadge.className = 'article-card__badge article-card__badge--open-access';
@@ -134,7 +113,6 @@ export class ArticleCard {
       footer.appendChild(openAccessBadge);
     }
 
-    // Número de citações
     if (this.article.hasCitations) {
       const citations = document.createElement('span');
       citations.className = 'article-card__citations';
@@ -142,16 +120,18 @@ export class ArticleCard {
       footer.appendChild(citations);
     }
 
-    // Botão salvar (opcional)
-    if (typeof this.onSave === 'function') {
-      this._saveButton = document.createElement('button');
-      this._saveButton.type = 'button';
-      this._saveButton.className = 'article-card__save';
-      this._saveButton.textContent = 'Salvar';
-      this._saveButton.setAttribute('aria-label', `Salvar artigo: ${this.article.displayTitle}`);
-      this._boundSaveClick = () => this._handleSaveClick();
-      this._saveButton.addEventListener('click', this._boundSaveClick);
-      footer.appendChild(this._saveButton);
+    // Botão salvar (somente se libraryService for fornecido)
+    if (this.libraryService) {
+      const saveContainer = document.createElement('div');
+      saveContainer.className = 'article-card__save-container';
+      footer.appendChild(saveContainer);
+
+      this.saveButton = new SaveArticleButton({
+        root: saveContainer,
+        article: this.article,
+        libraryService: this.libraryService,
+      });
+      this.saveButton.mount();
     }
 
     if (footer.children.length > 0) {
@@ -162,53 +142,22 @@ export class ArticleCard {
     this.isMounted = true;
   }
 
-  /**
-   * Remove o card do DOM e limpa event listeners.
-   */
   destroy() {
     if (!this.isMounted) return;
 
-    if (this._saveButton && this._boundSaveClick) {
-      this._saveButton.removeEventListener('click', this._boundSaveClick);
-      this._boundSaveClick = null;
+    if (this.saveButton) {
+      this.saveButton.destroy();
+      this.saveButton = null;
     }
 
     if (this.container) {
       this.container.remove();
       this.container = null;
-      this._saveButton = null;
     }
 
     this.isMounted = false;
   }
 
-  /**
-   * Atualiza o estado visual do botão de salvar.
-   * @param {Object} state
-   * @param {boolean} [state.isSaving] - Indica se a ação está em progresso.
-   * @param {boolean} [state.isSaved] - Indica se o artigo já foi salvo.
-   */
-  setSaveState({ isSaving = false, isSaved = false } = {}) {
-    this.isSaving = Boolean(isSaving);
-    this.isSaved = Boolean(isSaved);
-
-    if (!this._saveButton || !this.isMounted) return;
-
-    this._saveButton.disabled = this.isSaving || this.isSaved;
-    if (this.isSaving) {
-      this._saveButton.textContent = 'Salvando...';
-    } else if (this.isSaved) {
-      this._saveButton.textContent = 'Salvo ✓';
-    } else {
-      this._saveButton.textContent = 'Salvar';
-    }
-  }
-
-  /**
-   * Constrói a URL para a página do artigo.
-   * @returns {string}
-   * @private
-   */
   _buildArticleUrl() {
     if (this.article.hasDoi) {
       return `artigo.html?doi=${encodeURIComponent(this.article.doi)}`;
@@ -216,44 +165,16 @@ export class ArticleCard {
     return '#';
   }
 
-  /**
-   * Formata a lista de autores para exibição compacta.
-   * @returns {string}
-   * @private
-   */
   _formatAuthors() {
     const first = this.article.firstAuthor;
     if (!first) return 'Autores desconhecidos';
-
-    if (this.article.authorCount > 1) {
-      return `${first} et al.`;
-    }
+    if (this.article.authorCount > 1) return `${first} et al.`;
     return first;
   }
 
-  /**
-   * Trunca o resumo para um comprimento máximo.
-   * @param {string} abstract
-   * @returns {string}
-   * @private
-   */
   _truncateAbstract(abstract) {
     if (abstract.length <= this.abstractMaxLength) return abstract;
     return `${abstract.slice(0, this.abstractMaxLength).trim()}...`;
-  }
-
-  /**
-   * Trata o clique no botão salvar, chamando o callback e atualizando o estado.
-   * @private
-   */
-  _handleSaveClick() {
-    if (typeof this.onSave !== 'function') return;
-    if (this.isSaving || this.isSaved) return;
-
-    // A página pode chamar setSaveState para controlar o feedback.
-    // Aqui apenas disparamos o callback; o estado real deve ser gerenciado pela página,
-    // mas podemos fornecer um estado temporário de "salvando" se desejado.
-    this.onSave(this.article);
   }
 }
 

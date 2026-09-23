@@ -62,6 +62,7 @@ export class RevistaPage {
     this.footer.mount();
     this.searchForm.mount();
     this.resultsList.mount();
+
     this.loadingRoot.hidden = true;
     this.errorRoot.hidden = true;
     this.emptyRoot.hidden = true;
@@ -69,6 +70,7 @@ export class RevistaPage {
 
   async handleSearch(searchQuery) {
     const requestId = ++this.searchRequestId;
+
     this.resultsList.update([]);
     this.searchForm.setLoading(true);
     this.showLoading();
@@ -78,7 +80,9 @@ export class RevistaPage {
     try {
       const result = await searchService.search(searchQuery);
       if (requestId !== this.searchRequestId) return;
+
       this.resultsList.update(result);
+
       if (!result.hasResults) {
         this.showEmpty('Nenhum resultado encontrado', 'Tente ajustar os filtros.');
       }
@@ -132,10 +136,11 @@ export class RevistaPage {
 
   hideError() {
     this.errorRoot.hidden = true;
-    if (typeof document !== 'undefined' && document.getElementById('header-root')) {
-  const page = new ArticlePage();
-  page.mount();
+    if (this.errorComponent) {
+      this.errorComponent.destroy();
+      this.errorComponent = null;
     }
   }
 }
 
+export default RevistaPage;
