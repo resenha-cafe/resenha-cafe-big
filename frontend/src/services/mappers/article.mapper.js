@@ -62,7 +62,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.cited_by_count,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'openalex',
@@ -88,7 +88,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'crossref',
@@ -114,7 +114,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'semanticscholar',
@@ -140,7 +140,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'europepmc',
@@ -166,7 +166,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'scielo',
@@ -192,7 +192,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations,
+      citations: data.cited_by_count ?? data.citations ?? 0,
       references: data.references,
       confidence: data.confidence,
       source: 'core',
@@ -220,7 +220,7 @@ export class ArticleMapper {
       journal: normalizeJournal(data.journal),
       publisher: normalizePublisher(data.publisher),
       license: normalizeLicense(data.license),
-      citations: data.citations || data.cited_by_count || data.times_cited || 0,
+      citations: data.cited_by_count ?? data.citations ?? data.times_cited ?? 0,
       references: data.references || [],
       confidence: data.confidence || data.score || 0,
       source: data.source || data.provider || 'unknown',
@@ -281,5 +281,7 @@ function normalizeLicense(value) {
   }
   return '';
 }
-
+export function mapArticle(raw) {
+  return ArticleMapper.toDomain(raw);
+}
 export default ArticleMapper;

@@ -129,6 +129,7 @@ export function invalidateRuntime() {
 }
 
 export async function bootstrap(request, env, ctx) {
+  console.log('[BOOTSTRAP] URL recebida:', request.url);
   const runtime = getRuntime(env);
   const requestId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36);
 

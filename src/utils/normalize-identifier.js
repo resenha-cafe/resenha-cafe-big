@@ -6,282 +6,412 @@
  * Utils — Normalize Identifier
  * ============================================================
  *
- * 📚 AULA: Por que normalizar identificadores?
- * 
- * Identificadores como DOI, ISSN, ISBN, ORCID têm formatos
- * padrão, mas providers podem enviar variações:
- * 
- * - DOI: "10.1000/xyz123", "https://doi.org/10.1000/xyz123"
- * - ISSN: "1234-5678", "12345678"
- * - ISBN: "978-3-16-148410-0", "9783161484100"
- * - ORCID: "0000-0001-2345-6789", "https://orcid.org/0000-0001-2345-6789"
- * 
- * Sem normalização, o mesmo identificador em formatos diferentes
- * é tratado como identificadores diferentes.
- * 
- * 📚 Estratégia:
- * 
- * 1. Remove espaços e caracteres invisíveis
- * 2. Extrai o ID de URLs (doi.org, orcid.org, etc.)
- * 3. Aplica regras específicas por tipo (case, hífens)
+ * Responsabilidade:
+ * - transformar identificadores externos em representação canônica;
+ * - remover prefixos, URLs, espaços e formatações externas;
+ * - NÃO determinar se o identificador é semanticamente válido.
+ *
+ * A validação fica em validate-identifier.js.
+ * ============================================================
  */
 
 /**
  * Normaliza um identificador para seu formato canônico.
- * 
- * Suporta: DOI, ISSN, ISBN, ORCID, PMID, PMCID, arXiv.
- * 
- * @param {string} type - Tipo do identificador (doi, issn, isbn, etc.)
- * @param {string} value - Valor bruto do identificador
- * @returns {string|null} Identificador normalizado ou null se inválido
- * 
- * @example
- * normalizeIdentifier("doi", "https://doi.org/10.1000/xyz123")
- * // => "10.1000/xyz123"
- * 
- * @example
- * normalizeIdentifier("issn", "1234 5678")
- * // => "1234-5678"
- * 
- * @example
- * normalizeIdentifier("orcid", "https://orcid.org/0000-0001-2345-6789")
- * // => "0000-0001-2345-6789"
+ *
+ * Suporta:
+ * - DOI
+ * - ISSN
+ * - ISBN
+ * - ORCID
+ * - PMID
+ * - PMCID
+ * - arXiv
+ *
+ * Outros tipos conhecidos são preservados com trim, permitindo que
+ * identificadores específicos do domínio continuem funcionando sem
+ * regras artificiais de formatação.
+ *
+ * @param {string} type
+ * @param {string} value
+ * @returns {string|null}
  */
 export function normalizeIdentifier(type, value) {
-  if (!type || !value || typeof value !== "string") {
+  if (
+    typeof type !== "string" ||
+    typeof value !== "string"
+  ) {
     return null;
   }
 
-  const sanitized = value.trim();
+  const normalizedType = type.trim().toLowerCase();
 
-  switch (type.toLowerCase()) {
+  if (!normalizedType) {
+    return null;
+  }
+
+  const sanitized = removeInvisibleCharacters(value).trim();
+
+  if (!sanitized) {
+    return null;
+  }
+
+  switch (normalizedType) {
     case "doi":
       return normalizeDOI(sanitized);
+
     case "issn":
       return normalizeISSN(sanitized);
+
     case "isbn":
       return normalizeISBN(sanitized);
+
     case "orcid":
       return normalizeORCID(sanitized);
+
     case "pmid":
       return normalizePMID(sanitized);
+
     case "pmcid":
       return normalizePMCID(sanitized);
+
     case "arxiv":
       return normalizeArXiv(sanitized);
+
     default:
-      // Para tipos desconhecidos, apenas trim
-      return sanitized || null;
+      return sanitized;
   }
 }
 
 /**
- * Normaliza um DOI.
- * 
- * Remove prefixos de URL (https://doi.org/) e espaços.
- * DOI é case-insensitive — normalizado para lowercase.
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} DOI normalizado ou null
- * 
- * @example
- * normalizeDOI("https://doi.org/10.1000/xyz123")  // => "10.1000/xyz123"
- * normalizeDOI("10.1000/XYZ123")                   // => "10.1000/xyz123"
+ * Remove caracteres invisíveis que podem contaminar identidade.
+ *
+ * @param {string} value
+ * @returns {string}
  */
-export function normalizeDOI(value) {
-  if (!value) return null;
-
-  let normalized = value.trim();
-
-  // Remove prefixos de URL
-  normalized = normalized.replace(/^https?:\/\/(?:dx\.)?doi\.org\/+/i, "");
-
-  // Remove espaços e caracteres invisíveis
-  normalized = normalized.replace(/\s+/g, "");
-
-  // DOI é case-insensitive
-  normalized = normalized.toLowerCase();
-
-  // Valida formato básico: 10.XXXX/YYYY
-  const doiRegex = /^10\.\d{4,9}\/[-._;()/:a-z0-9]+$/i;
-  return doiRegex.test(normalized) ? normalized : null;
+function removeInvisibleCharacters(value) {
+  return value
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, "")
+    .replace(/\uFEFF/g, "");
 }
 
 /**
- * Normaliza um ISSN.
- * 
- * Formato canônico: XXXX-XXXX (8 dígitos com hífen).
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} ISSN normalizado ou null
- * 
- * @example
- * normalizeISSN("1234-5678")  // => "1234-5678"
- * normalizeISSN("12345678")   // => "1234-5678"
- * normalizeISSN("1234 5678")  // => "1234-5678"
+ * ============================================================
+ * DOI
+ * ============================================================
+ */
+
+/**
+ * Normaliza DOI.
+ *
+ * Canonicalização:
+ * - remove https://doi.org/
+ * - remove http://doi.org/
+ * - remove https://dx.doi.org/
+ * - remove http://dx.doi.org/
+ * - remove espaços
+ * - converte para lowercase
+ *
+ * @param {string} value
+ * @returns {string|null}
+ */
+export function normalizeDOI(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  let normalized = value.trim();
+
+  normalized = normalized.replace(
+    /^https?:\/\/(?:dx\.)?doi\.org\//i,
+    ""
+  );
+
+  normalized = normalized.replace(/^doi:\s*/i, "");
+
+  normalized = normalized.replace(/\s+/g, "");
+
+  normalized = normalized.toLowerCase();
+
+  /**
+   * DOI:
+   * 10.
+   * seguido por registrant code de 4–9 dígitos
+   * /
+   * seguido por suffix
+   *
+   * A validação detalhada continua pertencendo ao validator.
+   */
+  const doiRegex =
+    /^10\.\d{4,9}\/[-._;()/:a-z0-9]+$/i;
+
+  return doiRegex.test(normalized)
+    ? normalized
+    : null;
+}
+
+/**
+ * ============================================================
+ * ISSN
+ * ============================================================
+ */
+
+/**
+ * Normaliza ISSN.
+ *
+ * Exemplos:
+ * 12345678  → 1234-5678
+ * 1234 5678 → 1234-5678
+ * 1234-5678 → 1234-5678
+ *
+ * @param {string} value
+ * @returns {string|null}
  */
 export function normalizeISSN(value) {
-  if (!value) return null;
+  if (typeof value !== "string") {
+    return null;
+  }
 
-  // Remove tudo que não for dígito ou X
-  const cleaned = value.replace(/[^0-9X]/gi, "").toUpperCase();
+  const cleaned = value
+    .replace(/[^0-9X]/gi, "")
+    .toUpperCase();
 
-  if (cleaned.length !== 8) return null;
+  if (cleaned.length !== 8) {
+    return null;
+  }
 
-  // Insere hífen no meio
   return `${cleaned.slice(0, 4)}-${cleaned.slice(4)}`;
 }
 
 /**
- * Normaliza um ISBN.
- * 
- * Suporta ISBN-10 e ISBN-13.
- * Formato canônico: hífens nos lugares corretos.
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} ISBN normalizado ou null
- * 
- * @example
- * normalizeISBN("978-3-16-148410-0")  // => "978-3-16-148410-0"
- * normalizeISBN("9783161484100")       // => "978-3-16-148410-0"
+ * ============================================================
+ * ISBN
+ * ============================================================
+ */
+
+/**
+ * Normaliza ISBN.
+ *
+ * IMPORTANTE:
+ * Não tenta reconstruir hífens editoriais.
+ *
+ * ISBN possui diferentes regras de agrupamento dependendo
+ * do grupo linguístico/registrante. Portanto, a representação
+ * canônica para identidade será:
+ *
+ * ISBN-10 → 10 caracteres sem formatação
+ * ISBN-13 → 13 caracteres sem formatação
+ *
+ * @param {string} value
+ * @returns {string|null}
  */
 export function normalizeISBN(value) {
-  if (!value) return null;
-
-  // Remove tudo que não for dígito ou X
-  const cleaned = value.replace(/[^0-9X]/gi, "").toUpperCase();
-
-  if (cleaned.length === 10) {
-    // ISBN-10: X-XXX-XXXXX-X
-    return `${cleaned[0]}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 9)}-${cleaned[9]}`;
+  if (typeof value !== "string") {
+    return null;
   }
 
-  if (cleaned.length === 13) {
-    // ISBN-13: XXX-X-XX-XXXXXX-X
-    return `${cleaned.slice(0, 3)}-${cleaned[3]}-${cleaned.slice(4, 6)}-${cleaned.slice(6, 12)}-${cleaned[12]}`;
+  const cleaned = value
+    .replace(/[^0-9X]/gi, "")
+    .toUpperCase();
+
+  if (cleaned.length !== 10 && cleaned.length !== 13) {
+    return null;
   }
-
-  return null;
-}
-
-/**
- * Normaliza um ORCID.
- * 
- * Extrai o ID de URLs e garante o formato com hífens.
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} ORCID normalizado ou null
- * 
- * @example
- * normalizeORCID("https://orcid.org/0000-0001-2345-6789")  // => "0000-0001-2345-6789"
- * normalizeORCID("0000-0001-2345-6789")                     // => "0000-0001-2345-6789"
- */
-export function normalizeORCID(value) {
-  if (!value) return null;
-
-  let normalized = value.trim();
-
-  // Remove prefixos de URL
-  normalized = normalized.replace(/^https?:\/\/orcid\.org\/+/i, "");
-
-  // Remove espaços
-  normalized = normalized.replace(/\s+/g, "");
-
-  // Tenta encontrar o padrão ORCID
-  const match = normalized.match(/(\d{4}-\d{4}-\d{4}-\d{3}[\dX])/i);
-  if (match) return match[1].toUpperCase();
-
-  // Tenta sem hífens
-  const matchNoHyphen = normalized.match(/(\d{4})(\d{4})(\d{4})(\d{3}[\dX])/i);
-  if (matchNoHyphen) {
-    return `${matchNoHyphen[1]}-${matchNoHyphen[2]}-${matchNoHyphen[3]}-${matchNoHyphen[4]}`.toUpperCase();
-  }
-
-  return null;
-}
-
-/**
- * Normaliza um PMID (PubMed ID).
- * 
- * PMID é um número inteiro de 1 a 8 dígitos.
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} PMID normalizado ou null
- * 
- * @example
- * normalizePMID("12345678")   // => "12345678"
- * normalizePMID("PMID: 1234") // => "1234"
- */
-export function normalizePMID(value) {
-  if (!value) return null;
-
-  // Remove prefixo "PMID:" e espaços
-  const cleaned = value.replace(/^PMID:?\s*/i, "").replace(/\s+/g, "");
-
-  // Deve ser apenas dígitos
-  if (!/^\d{1,8}$/.test(cleaned)) return null;
 
   return cleaned;
 }
 
 /**
- * Normaliza um PMCID (PubMed Central ID).
- * 
- * PMCID tem o formato PMC seguido de dígitos.
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} PMCID normalizado ou null
- * 
- * @example
- * normalizePMCID("PMC1234567")      // => "PMC1234567"
- * normalizePMCID("pmc1234567")      // => "PMC1234567"
+ * ============================================================
+ * ORCID
+ * ============================================================
  */
-export function normalizePMCID(value) {
-  if (!value) return null;
-
-  // Remove espaços
-  const cleaned = value.replace(/\s+/g, "");
-
-  // Deve começar com PMC (case-insensitive) seguido de dígitos
-  const match = cleaned.match(/^(PMC)(\d+)$/i);
-  if (!match) return null;
-
-  return `PMC${match[2]}`;
-}
 
 /**
- * Normaliza um arXiv ID.
- * 
- * Formato canônico: YYMM.NNNNN (nova) ou arxiv:YYMMNNNN (antiga).
- * 
- * @param {string} value - Valor bruto
- * @returns {string|null} arXiv ID normalizado ou null
- * 
- * @example
- * normalizeArXiv("2101.12345")         // => "2101.12345"
- * normalizeArXiv("arxiv:2101.12345v2") // => "2101.12345"
+ * Normaliza ORCID.
+ *
+ * Aceita:
+ * - 0000-0001-2345-6789
+ * - 0000000123456789
+ * - https://orcid.org/0000-0001-2345-6789
+ *
+ * @param {string} value
+ * @returns {string|null}
  */
-export function normalizeArXiv(value) {
-  if (!value) return null;
+export function normalizeORCID(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
 
   let normalized = value.trim();
 
-  // Remove prefixo "arxiv:"
-  normalized = normalized.replace(/^arxiv:?\s*/i, "");
+  normalized = normalized.replace(
+    /^https?:\/\/(?:www\.)?orcid\.org\//i,
+    ""
+  );
 
-  // Remove sufixo de versão (v1, v2, etc.)
-  normalized = normalized.replace(/v\d+$/i, "");
+  normalized = normalized.replace(
+    /^orcid:\s*/i,
+    ""
+  );
 
-  // Remove espaços
   normalized = normalized.replace(/\s+/g, "");
 
-  // Formato novo: YYMM.NNNNN
+  const withHyphens =
+    normalized.match(
+      /^(\d{4})-(\d{4})-(\d{4})-(\d{3}[\dX])$/i
+    );
+
+  if (withHyphens) {
+    return withHyphens[0].toUpperCase();
+  }
+
+  const withoutHyphens =
+    normalized.match(
+      /^(\d{4})(\d{4})(\d{4})(\d{3}[\dX])$/i
+    );
+
+  if (!withoutHyphens) {
+    return null;
+  }
+
+  return [
+    withoutHyphens[1],
+    withoutHyphens[2],
+    withoutHyphens[3],
+    withoutHyphens[4],
+  ]
+    .join("-")
+    .toUpperCase();
+}
+
+/**
+ * ============================================================
+ * PMID
+ * ============================================================
+ */
+
+/**
+ * Normaliza PMID.
+ *
+ * Não impõe limite artificial de quantidade de dígitos.
+ *
+ * @param {string} value
+ * @returns {string|null}
+ */
+export function normalizePMID(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const cleaned = value
+    .replace(/^pmid:\s*/i, "")
+    .replace(/\s+/g, "");
+
+  if (!/^\d+$/.test(cleaned)) {
+    return null;
+  }
+
+  return cleaned;
+}
+
+/**
+ * ============================================================
+ * PMCID
+ * ============================================================
+ */
+
+/**
+ * Normaliza PMCID.
+ *
+ * @param {string} value
+ * @returns {string|null}
+ */
+export function normalizePMCID(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const cleaned = value
+    .replace(/^https?:\/\/(?:www\.)?ncbi\.nlm\.nih\.gov\/pmc\/articles\//i, "")
+    .replace(/\s+/g, "");
+
+  const match = cleaned.match(
+    /^pmc(\d+)$/i
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return `PMC${match[1]}`;
+}
+
+/**
+ * ============================================================
+ * arXiv
+ * ============================================================
+ */
+
+/**
+ * Normaliza arXiv.
+ *
+ * Remove:
+ * - arxiv:
+ * - arXiv:
+ * - versão v1/v2/v3...
+ *
+ * Exemplos:
+ *
+ * 2101.12345
+ * arxiv:2101.12345
+ * 2101.12345v2
+ * arxiv:2101.12345v3
+ *
+ * tornam-se:
+ *
+ * 2101.12345
+ *
+ * @param {string} value
+ * @returns {string|null}
+ */
+export function normalizeArXiv(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  let normalized = value.trim();
+
+  normalized = normalized.replace(
+    /^arxiv:\s*/i,
+    ""
+  );
+
+  normalized = normalized.replace(
+    /v\d+$/i,
+    ""
+  );
+
+  normalized = normalized.replace(
+    /\s+/g,
+    ""
+  );
+
+  /**
+   * Formato novo:
+   * YYMM.NNNNN
+   */
   if (/^\d{4}\.\d{4,5}$/.test(normalized)) {
     return normalized;
   }
 
-  // Formato antigo: YYMMNNNN → YYMM.NNNN
-  const oldFormat = normalized.match(/^(\d{4})(\d{4,5})$/);
+  /**
+   * Formato antigo:
+   * YYMMNNNN
+   */
+  const oldFormat = normalized.match(
+    /^(\d{4})(\d{4,5})$/
+  );
+
   if (oldFormat) {
     return `${oldFormat[1]}.${oldFormat[2]}`;
   }

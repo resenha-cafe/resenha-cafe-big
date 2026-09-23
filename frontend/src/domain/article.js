@@ -12,7 +12,7 @@ import { deepFreeze } from '../utils/deep-freeze.js';
 export class Article {
   constructor(data = {}) {
     this.title = typeof data.title === 'string' ? data.title : '';
-    this.doi = typeof data.doi === 'string' ? data.doi : '';
+    this.doi = this._normalizeDoi(data.doi);
     this.abstract = typeof data.abstract === 'string' ? data.abstract : '';
     this.publicationDate = data.publicationDate || '';
     this.language = typeof data.language === 'string' ? data.language : '';
@@ -61,14 +61,43 @@ export class Article {
   }
 
   /**
+   * Normaliza a representação textual do DOI para uma forma canônica.
+   *
+   * Exemplos:
+   *   "10.1234/abc"                    → "10.1234/abc"
+   *   " doi:10.1234/abc "              → "10.1234/abc"
+   *   "DOI: 10.1234/abc"               → "10.1234/abc"
+   *   "https://doi.org/10.1234/abc"    → "10.1234/abc"
+   *   "http://doi.org/10.1234/abc"     → "10.1234/abc"
+   *   "https://dx.doi.org/10.1234/abc" → "10.1234/abc"
+   *
+   * A normalização não altera a caixa do DOI e não tenta validar
+   * sua estrutura por regex. A responsabilidade aqui é apenas
+   * estabelecer uma representação canônica.
+   *
+   * @private
+   */
+  _normalizeDoi(value) {
+    if (typeof value !== 'string') return '';
+
+    return value
+      .trim()
+      .replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, '')
+      .replace(/^doi:\s*/i, '')
+      .trim();
+  }
+
+  /**
    * Normaliza um campo que pode ser string ou objeto.
    * @private
    */
   _normalizeStringOrObject(value) {
     if (typeof value === 'string') return value;
+
     if (value && typeof value === 'object') {
       return deepFreeze({ ...value });
     }
+
     return '';
   }
 
@@ -82,9 +111,11 @@ export class Article {
 
   get journalName() {
     if (typeof this.journal === 'string') return this.journal;
+
     if (this.journal && typeof this.journal === 'object') {
       return this.journal.name || '';
     }
+
     return '';
   }
 
@@ -97,7 +128,7 @@ export class Article {
   }
 
   get hasDoi() {
-    return this.doi.trim().length > 0;
+    return this.doi.length > 0;
   }
 
   get hasUrl() {

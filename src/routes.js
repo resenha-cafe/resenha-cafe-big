@@ -50,6 +50,19 @@ export const routes = [
   },
 
   {
+  method: "GET",
+  path: "/env-check",
+  async handler(request, context) {
+    return Response.ok({
+      hasOpenAlexKey: Boolean(context.env?.OPENALEX_API_KEY),
+      hasSemanticKey: Boolean(context.env?.SEMANTIC_SCHOLAR_API_KEY),
+      hasCoreKey: Boolean(context.env?.CORE_API_KEY),
+      hasCrossrefEmail: Boolean(context.env?.CROSSREF_EMAIL),
+    });
+  },
+},
+
+  {
     method: "GET",
     path: "/article",
     async handler(request, context) {

@@ -1,25 +1,14 @@
-/**
- * ============================================================
- * Resenha & Café
- * Search Worker V4
- * ------------------------------------------------------------
- * Domain — Identifier (Value Object)
- * ============================================================
- */
-
 import { deepFreeze } from "../../utils/deep-freeze.js";
 import { normalizeIdentifier } from "../../utils/normalize-identifier.js";
 import { validateIdentifier } from "../../utils/validate-identifier.js";
 
-/**
- * Tipos de identificadores suportados (exportado para reuso)
- */
 export const IDENTIFIER_TYPES = Object.freeze({
   DOI: "doi",
   PMID: "pmid",
   PMCID: "pmcid",
   OPENALEX: "openalex",
   SEMANTIC: "semantic",
+  ORCID: "orcid",
   ARXIV: "arxiv",
   ISBN: "isbn",
   ISSN: "issn",
@@ -28,6 +17,16 @@ export const IDENTIFIER_TYPES = Object.freeze({
   SCOPUS: "scopus",
   WOS: "wos",
 });
+
+function normalizeIdentifierType(type) {
+  if (typeof type !== "string") {
+    return null;
+  }
+
+  const normalized = type.trim().toLowerCase();
+
+  return normalized || null;
+}
 
 // ============================================================
 // UTILITÁRIO DE CLONE (fallback para structuredClone)
@@ -78,31 +77,39 @@ export class Identifier {
    * @param {Object} [data.metadata] - Metadados adicionais
    */
   constructor(data = {}) {
-    const normalizedValue = normalizeIdentifier(data.type, data.value);
+  const normalizedType = normalizeIdentifierType(data.type);
 
-    this.type = data.type || null;
-    this.value = normalizedValue || data.value || null;
-    this.provider = data.provider || null;
+  const normalizedValue = normalizeIdentifier(
+    normalizedType,
+    data.value
+  );
 
-    // Confidence limitada a [0, 1]
-    this.confidence = Math.max(0, Math.min(1, data.confidence ?? 1));
+  this.type = normalizedType;
+  this.value = normalizedValue;
+  this.provider = data.provider || null;
 
-    this.source = data.source || null;
+  this.confidence = Math.max(
+    0,
+    Math.min(1, data.confidence ?? 1)
+  );
 
-    // Metadata: clone seguro + deep freeze
-    const clonedMetadata = data.metadata
-      ? safeClone(data.metadata)
-      : {};
+  this.source = data.source || null;
 
-    this.metadata = deepFreeze(clonedMetadata);
+  const clonedMetadata = data.metadata
+    ? safeClone(data.metadata)
+    : {};
 
-    // Pré-cálculo (privado)
-    this.#isValid = validateIdentifier(this.type, this.value);
-    this.#identityKey = this.#calculateIdentityKey();
+  this.metadata = deepFreeze(clonedMetadata);
 
-    Object.freeze(this);
-  }
+  this.#isValid = validateIdentifier(
+    this.type,
+    this.value
+  );
 
+  this.#identityKey = this.#calculateIdentityKey();
+
+  Object.freeze(this);
+}
   // ============================================================
   // VALIDAÇÃO PRIVADA
   // ============================================================

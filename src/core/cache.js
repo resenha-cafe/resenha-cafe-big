@@ -28,7 +28,7 @@ export class Cache {
   generateKey(type, params) {
     const stable = canonicalJson(params);
     const hash = identityHash(stable);
-    return `${type}:${hash}`;
+    return `v3:${type}:${hash}`;
   }
 
   async get(key) {
